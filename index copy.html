@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>FreshCo PLU Lookup — Filtered</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* UI UNCHANGED */
+  body { font-family: -apple-system, Arial, sans-serif; margin: 18px; }
+  h2 { margin: 0 0 12px; }
+  .bar { display:flex; gap:8px; }
+  input { flex:1; padding:10px; font-size:16px; border:1px solid #ccc; border-radius:10px; }
+  button { padding:10px 14px; font-size:16px; border:0; border-radius:10px; background:#0a7cff; color:#fff; }
+  .result { margin-top:16px; line-height:1.6; }
+  ul { margin:6px 0 0 16px; }
+  li { margin:2px 0; }
+  .muted { color:#666; }
+</style>
+</head>
+<body>
+  <h2>FreshCo PLU Lookup</h2>
+  <div class="bar">
+    <input id="query" type="text" placeholder="Type item or PLU (e.g., Banana or 4011)">
+    <button id="btn">Search</button>
+  </div>
+  <div id="results" class="result"></div>
+
+<script>
+// ======================== DATA (EDIT HERE) ========================
+// 1) Flat PLU list: PLU -> Item Name
+var pluMap = {
+ 
+  "8136": "A Choy",
+  "3012": "Abate Pears",
+  "4750": "Acorn / Pepper",
+  "5047": "Almonds - Natural Raw",
+  "3064": "Aloe Vera Leaf",
+  "3438": "Ambrosia Apples",
+  "3176": "Amla / Gooseberry (Loose)",
+  "4677": "Anaheim Hot Peppers",
+  "4515": "Anise",
+  "58854": "Apple Mango",
+  "4503": "Arrow Root",
+  "4084": "Artichokes Each",
+  "4408": "Asian Brown Pears",
+  "4407": "Asian Yellow Pears",
+  "4080": "Asparagus",
+  "4220": "Atemoya",
+  "89140": "Avocado 5pk Bag",
+  "73618": "Avocado Caribbean",
+  "4046": "Avocadoes Loose",
+  "8165": "Baby Bok Choy VolFil",
+  "8134": "Baby Napa",
+  "95704": "Bag for Life Replacement",
+  "4011": "Banana - No Gas - Green",
+  "23885": "Banana Flower",
+  "4237": "Bananas #2’s",
+  "94011": "Bananas Organic",
+  "71514": "Bananas Thai",
+  "4024": "Bartlett Pears",
+  "4885": "Basil Regular",
+  "4528": "Beans Fava",
+  "4066": "Beans Green",
+  "81187": "Beef",
+  "4540": "Beets - Bulk",
+  "4539": "Beets - Bunch",
+  "4065": "Bell Green Sweet Peppers",
+  "3121": "Bell Orange Sweet Peppers",
+  "4688": "Bell Red Sweet Peppers",
+  "4689": "Bell Yellow Sweet Peppers",
+  "23742": "Bengali Squash",
+  "54525": "Bhindi (Indian Okra)",
+  "4783": "Bitter Melon, Chinese",
+  "4789": "Bitter Melon, Indian",
+  "4039": "Black Plums",
+  "4056": "Black Seedless Grapes",
+  "4239": "Blackberries (170g)",
+  "4527": "Bodie (Long Beans)",
+  "4545": "Bok Choy",
+  "4026": "Bosc Pears",
+  "4632": "Boston Lettuce",
+  "4254": "Breadfruit",
+  "4471": "Breadnut/Sour",
+  "4060": "Broccoli",
+  "3082": "Broccoli Crowns",
+  "4550": "Brussel Sprouts",
+  "9642": "Bulk Peanuts - In Shell",
+  "88192": "Burdock",
+  "4759": "Butternut",
+  "60096": "Cabbage Flat (Kg)",
+  "4556": "Cabbage Green (Each)",
+  "3254": "Cabbage Red (Each)",
+  "4955": "Cabbage Savoy (Each)",
+  "48997": "Cactus Prickly Pears - Case",
+  "89362": "Calamansi",
+  "3189": "Callaloo",
+  "4050": "Cantaloupes",
+  "4562": "Carrots Bulk",
+  "4094": "Carrots Bunch",
+  "9750": "Cashews - Raw",
+  "4079": "Cauliflower",
+  "4583": "Celery",
+  "4585": "Celery Root",
+  "3178": "Chaapan Kandu",
+  "8180": "Chayote",
+  "4257": "Cherimoya",
+  "4045": "Cherries",
+  "80689": "Chicken",
+  "71803": "Chickpeas",
+  "4686": "Chili Peppers",
+  "23920": "Chinese Cauliflower",
+  "89388": "Chinese Chestnuts",
+  "73479": "Chinese Leek",
+  "4820": "Chinese Taro",
+  "4888": "Chives",
+  "4889": "Cilantro / Coriander",
+  "4450": "Clementines (Loose)",
+  "49532": "Clementines 2lb",
+  "4827": "Cocoes",
+  "4261": "Coconut",
+  "4614": "Collard",
+  "49500": "Comp Lemons 2lb",
+  "49511": "Comp Oranges 3lb",
+  "49533": "Comp Yellow 3lb",
+  "9016": "Compost Cow Manure",
+  "9008": "Compost Sheep Manure",
+  "73582": "Cooking Papaya",
+  "4078": "Corn - Loose",
+  "3507": "Cosmic Crisp Apples",
+  "4687": "Cubanelle Sweet Peppers",
+  "4593": "Cucumber Seedless",
+  "4999": "Cucumbers 6pk Mini",
+  "4823": "Cucumbers Dill - 3L",
+  "4062": "Cucumbers Field",
+  "4822": "Curry Leaf",
+  "4615": "Dandelion",
+  "4791": "Dasheen (Yam)",
+  "4511": "Dasheen Bush",
+  "4891": "Dill Fresh",
+  "3040": "Dragon Fruit / Pitahaya",
+  "32942": "Drumstick",
+  "23740": "Drumstick Leaves",
+  "3182": "Eddoes Costa Rica",
+  "47209": "Eddoes Indian",
+  "4081": "Eggplant",
+  "3089": "Eggplant Chinese",
+  "4500": "Eggplant Indian",
+  "88149": "Eggplant Philippine",
+  "43461": "Eggplant Thai",
+  "4854": "Eggplant Trinidadian",
+  "4604": "Endive",
+  "4543": "Endive Belgium",
+  "4605": "Escarole",
+  "49465": "Farmyard Compost",
+  "4800": "Field Tomatoes",
+  "40813": "Field Tomatoes 3L Basket",
+  "4418": "Forelle Pears",
+  "4474": "Fragrant Pears",
+  "4131": "Fuji Apples",
+  "4350": "Fuzzy Melon",
+  "4916": "Gai Choy Baby",
+  "3160": "Gai Lan",
+  "8156": "Gai Lan VolFil",
+  "4608": "Garlic",
+  "88870": "Garlic Stem",
+  "40529": "Gawar",
+  "4612": "Ginger Root",
+  "4021": "Golden Delicious",
+  "4243": "Gooseberries 6oz",
+  "3038": "Granadilla",
+  "4139": "Granny Smith Apples",
+  "88844": "Grape Leaves",
+  "3216": "Grape Tomatoes",
+  "4288": "Grapefruit Deep Red",
+  "4068": "Green Onion",
+  "4394": "Green Papaya",
+  "5597": "Green Plums",
+  "4022": "Green Seedless Grapes",
+  "88144": "Green Sour Grapes",
+  "3283": "Honeycrisp Apples",
+  "4329": "Honeydew Melons",
+  "4625": "Horseradish Root",
+  "4799": "Hothouse Large Tomatoes",
+  "4690": "Hungarian Hot Peppers",
+  "4061": "Iceberg Lettuce",
+  "4480": "Jackfruit",
+  "4693": "Jalapeno Hot Peppers",
+  "4626": "Jicama",
+  "4313": "Julie Mango",
+  "4769": "Kabocha",
+  "4627": "Kale",
+  "3193": "Kale - Red",
+  "4030": "Kiwi",
+  "72715": "Kiwi Clamshell",
+  "4628": "Kohlrabi",
+  "4076": "Leaf Green",
+  "4075": "Leaf Red",
+  "4629": "Leeks",
+  "4053": "Lemons",
+  "4048": "Limes",
+  "54670": "Lobok - Green",
+  "88188": "Lobok - With Stem",
+  "4001": "Long Squash",
+  "4308": "Loquats",
+  "3099": "Lotus Root",
+  "4309": "Lychee",
+  "4644": "Malanga Root",
+  "4312": "Mango Ataulfo",
+  "3198": "Mango Ataulfo - Case",
+  "4311": "Mangoes Green",
+  "4051": "Mangoes Red",
+  "5006": "Mangoes Sugar",
+  "4317": "Melons Canary/Yellow",
+  "3623": "Melons Hami",
+  "4336": "Melons Santa Claus",
+  "8608": "Methi",
+  "5885": "Milk Chocolate Almonds",
+  "8190": "Mini Baby Bok VolFil",
+  "4824": "Mini Cucumber",
+  "8195": "Mini Shanghai Bok VolFil",
+  "4896": "Mint Fresh",
+  "4552": "Napa Cabbage",
+  "8016": "Nasberry (Chikoo)",
+  "4012": "Navel Oranges",
+  "4378": "Nectarines",
+  "3035": "Nectarines White",
+  "4655": "Okra",
+  "4656": "Okra, Chinese",
+  "4897": "Oregano",
+  "3112": "Papaya Formosa Large",
+  "4901": "Parsley Italian",
+  "4899": "Parsley Regular",
+  "4671": "Parsley Root",
+  "54527": "Parwar",
+  "4397": "Passion Fruit",
+  "25255": "Passion Fruit Yellow",
+  "4044": "Peaches",
+  "4405": "Peaches 3lt",
+  "4401": "Peaches White Flesh",
+  "4433": "Pineapples",
+  "4128": "Pink Cripps Apples",
+  "9760": "Pistachios Salted",
+  "4235": "Plantain Bananas",
+  "4087": "Plum / Roma Tomatoes",
+  "4705": "Poblano Hot Peppers",
+  "54220": "Pooja Coconut",
+  "63252": "Pork",
+  "4279": "Pummelos",
+  "4760": "Pumpkin, Jamaican",
+  "4447": "Quince",
+  "4738": "Radicchio",
+  "4089": "Radish Bunch",
+  "88972": "Rambutan",
+  "4547": "Rapini Andy Boy",
+  "4054": "Raspberries (170g)",
+  "4563": "Red Carrot",
+  "4167": "Red Delicious Apples",
+  "21394": "Red Guava",
+  "4804": "Red on the Vine Tomatoes",
+  "4082": "Red Onions",
+  "3183": "Red Onions - Indian",
+  "49534": "Red Onions 3lb",
+  "4041": "Red Plums",
+  "4073": "Red Potato Loose",
+  "4023": "Red Seedless Grapes",
+  "4747": "Rhubarb",
+  "4640": "Romaine Lettuce",
+  "4173": "Royal Gala Apples",
+  "4725": "Russet Potatoes Loose",
+  "4745": "Rutabagas Waxed",
+  "3139": "Savory",
+  "4711": "Scotch Bonnet Hot",
+  "8153": "Shanghai Bok Choy VolFil",
+  "13143": "Sharoni Persimmon Case",
+  "88029": "Sliced Pumpkin",
+  "4665": "Small Yellow Onions, Bulk",
+  "3177": "Snake Gourd",
+  "8132": "Snow Pea Tips",
+  "14206": "Soda Stream Exchange Credit",
+  "3990": "Sorrel",
+  "4488": "Sour Sop",
+  "4776": "Spaghetti",
+  "4093": "Spanish Onions",
+  "4895": "Spinach (Poi)",
+  "4090": "Spinach Bunch",
+  "4513": "Spinach Red",
+  "3180": "Spiny Gourd / Kantola",
+  "4790": "Sugar Cane",
+  "21641": "Sugar Cane - Black",
+  "89359": "Sweet Limes",
+  "4814": "Sweet Potatoes / Yams (Orange)",
+  "4818": "Sweet Purple / Red (White Flesh)",
+  "4586": "Swiss Chard Green",
+  "4587": "Swiss Chard Red",
+  "3991": "Taiwan Guava",
+  "41964": "Taiwan Okra",
+  "4793": "Tamarilo Red",
+  "4906": "Tarragon",
+  "4907": "Thyme",
+  "4851": "Thyme",
+  "4574": "Tinda",
+  "4787": "Tindora",
+  "4963": "Tomatillos",
+  "9018": "Topsoil Black Earth 25L",
+  "54726": "Tumeric Amba (White)",
+  "4918": "Tumeric Yellow",
+  "4812": "Turnip White",
+  "3993": "Valor, Loose",
+  "3060": "Vegetable Marrow",
+  "9323": "Verdulaga",
+  "4159": "Vidalia Onions",
+  "9605": "Walnut Halves & Pieces",
+  "4943": "Walnuts - In Shell",
+  "22073": "Water Coconut",
+  "4815": "Watercress",
+  "3421": "Watermelon Mini Seedless",
+  "4031": "Watermelon Seeded",
+  "4032": "Watermelon Seedless",
+  "42027": "White Guava",
+  "4663": "White Onions",
+  "4083": "White Potato Loose",
+  "9951": "White Potatoes 3L Basket",
+  "4731": "White Yams",
+  "4592": "Wild Cucumber",
+  "4713": "Wiri Peppers",
+  "4890": "Ya Pear",
+  "4264": "Yellow Dates",
+  "4727": "Yellow Potato Loose",
+  "3173": "Yellow Yams",
+  "4262": "Young Coconut",
+  "8210": "Yu Choy VolFil",
+  "4819": "Yucca (Cassava)",
+  "4067": "Zucchini",
+  "4086": "Zucchini Yellow"
+};
+
+// 2) Family map: PLU -> [singular, plural] (extend as needed)
+var familyMap = {
+  // Bananas
+  "4011": ["banana", "bananas"],
+  "4237": ["banana", "bananas"],
+  "4234": ["banana", "bananas"],
+  // Apples
+  "4131": ["apple", "apples"],
+  "4015": ["apple", "apples"],
+  "4017": ["apple", "apples"],
+  "4173": ["apple", "apples"],
+  "3283": ["apple", "apples"],
+  // Melons
+  "4032": ["watermelon", "watermelons"],
+  "4031": ["watermelon", "watermelons"],
+  "4050": ["cantaloupe", "cantaloupes"],
+  "4329": ["honeydew", "honeydews"],
+  // Tropical / Large Fruit
+  "4474": ["breadfruit", "breadfruits"],
+  "4479": ["jackfruit", "jackfruits"],
+  // Vegetables (examples)
+  "4067": ["zucchini", "zucchinis"],
+  "4086": ["zucchini", "zucchinis"],
+  "4041": ["eggplant", "eggplants"],
+  "4065": ["pepper", "peppers"],
+  "4681": ["sweet potato", "sweet potatoes"],
+  // Earlier items
+  "8136": ["asian green", "asian greens"],
+  "3012": ["pear", "pears"],
+  "4750": ["squash", "squashes"],
+  "4264": ["date", "dates"],
+  "4727": ["potato", "potatoes"],
+  "3173": ["yam", "yams"],
+  "4262": ["tropical fruit", "tropical fruits"],
+  "8210": ["asian green", "asian greens"],
+  "4819": ["root", "roots"]
+};
+
+// =================== SEARCH NORMALIZATION / MATCHING ===================
+// Manual synonyms + spaced/unspaced hardcodes
+var aliases = {
+  "aubergine":"eggplant",
+  "brinjal":"eggplant",
+  "courgette":"zucchini",
+  "capsicum":"pepper",
+  "okra":"bhindi",
+  "coriander":"cilantro",
+  "spring onion":"green onion",
+  "scallion":"green onion",
+  "bell pepper":"pepper",
+  "green pepper":"pepper",
+  "water melon":"watermelon",
+  "bread fruit":"breadfruit",
+  "sweet potato":"sweetpotato",
+  "dragon fruit":"dragonfruit",
+  "jack fruit":"jackfruit",
+  "star fruit":"starfruit",
+  "passion fruit":"passionfruit",
+  "custard apple":"custardapple"
+};
+
+// Build family aliases (singular/plural collapse to singular)
+(function(){
+  Object.keys(familyMap).forEach(function(code){
+    var arr = familyMap[code];
+    if (Array.isArray(arr)) {
+      var canonical = (arr[0]||"").toLowerCase();
+      arr.forEach(function(term){
+        var t = (term||"").toLowerCase();
+        if (t && canonical) aliases[t] = canonical;
+      });
+    }
+  });
+})();
+
+var STOP = new Set(["the","a","for","code","plu","all","please","give","me","of","find"]);
+
+function stripDiacritics(s){ return (s||"").normalize ? s.normalize("NFD").replace(/[\u0300-\u036f]/g,"") : s; }
+function normalize(s){ return stripDiacritics(String(s||"")).toLowerCase().replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim(); }
+function nospace(s){ return normalize(s).replace(/\s+/g,""); }
+function singularize(word){ return (word.length>3 && /s$/.test(word)) ? word.replace(/s$/,"") : word; }
+
+function toTokens(s){
+  var joined = normalize(s).split(" ").filter(Boolean).map(singularize).filter(t=>!STOP.has(t)).join(" ");
+  Object.keys(aliases).forEach(function(k){
+    var nk = normalize(k);
+    if (joined.indexOf(nk) !== -1) {
+      joined = joined.replace(new RegExp("\\b"+nk+"\\b","g"), normalize(aliases[k]));
+    }
+  });
+  return joined.split(" ").filter(Boolean);
+}
+
+function soundex(word){
+  word = normalize(word); if (!word) return "";
+  var first = word[0].toUpperCase();
+  var map = { b:1,f:1,p:1,v:1, c:2,g:2,j:2,k:2,q:2,s:2,x:2,z:2, d:3,t:3, l:4, m:5,n:5, r:6 };
+  var out = first, prev = map[word[0]] || 0;
+  for (var i=1;i<word.length;i++){
+    var code = map[word[i]] || 0;
+    if (code !== 0 && code !== prev) out += String(code);
+    prev = code;
+  }
+  return (out + "000").slice(0,4);
+}
+
+function trigrams(s){
+  s = "  " + normalize(s) + "  ";
+  var g={};
+  for (var i=0;i<s.length-2;i++) g[s.slice(i,i+3)] = (g[s.slice(i,i+3)]||0)+1;
+  return g;
+}
+function cosine3(a,b){
+  var A=trigrams(a), B=trigrams(b), dot=0, na=0, nb=0;
+  for (var k in A){ na += A[k]*A[k]; if (B[k]) dot += A[k]*B[k]; }
+  for (var k2 in B) nb += B[k2]*B[k2];
+  return (na&&nb) ? dot / Math.sqrt(na*nb) : 0;
+}
+function editDistance(a,b){
+  a = normalize(a); b = normalize(b);
+  var al=a.length, bl=b.length; if (!al) return bl; if (!bl) return al;
+  var dp = new Array((al+1)*(bl+1));
+  function idx(i,j){ return i*(bl+1)+j; }
+  for (var i=0;i<=al;i++) dp[idx(i,0)] = i;
+  for (var j=0;j<=bl;j++) dp[idx(0,j)] = j;
+  for (var i=1;i<=al;i++) for (var j=1;j<=bl;j++){
+    var cost = a.charAt(i-1)===b.charAt(j-1)?0:1;
+    var del = dp[idx(i-1,j)]+1, ins = dp[idx(i,j-1)]+1, sub = dp[idx(i-1,j-1)] + cost;
+    var m = del < ins ? del : ins; dp[idx(i,j)] = m < sub ? m : sub;
+  }
+  return dp[idx(al,bl)];
+}
+function tokenSet(str){ return toTokens(str).reduce(function(set,t){ set[t]=1; return set; },{}); }
+function phoneticSimilarity(aTokens, bTokens){
+  if (!aTokens.length || !bTokens.length) return 0;
+  var a = aTokens.map(soundex), b = bTokens.map(soundex), matches = 0;
+  for (var i=0;i<a.length;i++)
+    for (var j=0;j<b.length;j++)
+      if (a[i] && a[i] === b[j]) { matches++; break; }
+  return matches / Math.max(a.length,b.length);
+}
+function jaccard(aStr,bStr){
+  var A = tokenSet(aStr), B = tokenSet(bStr), inter=0, uni=0, keys={};
+  for (var k in A){ keys[k]=1; if (B[k]) inter++; }
+  for (var k2 in B) keys[k2]=1;
+  for (var u in keys) uni++;
+  return uni ? inter/uni : 0;
+}
+function scoreName(name, query){
+  var nameN = normalize(name), qN = normalize(query); if (!nameN || !qN) return 0;
+  var sub = nameN.indexOf(qN) !== -1 ? 1 : 0;
+  var dist = editDistance(nameN, qN), maxLen = Math.max(nameN.length, qN.length);
+  var edSim = maxLen ? (1 - dist/maxLen) : 0;
+  var jac = jaccard(name, query);
+  var ph = phoneticSimilarity(toTokens(name), toTokens(query));
+  var cos3v = cosine3(name, query);
+  var score = (jac*0.40) + (sub*0.25) + (ph*0.15) + (cos3v*0.10) + (edSim*0.10);
+  if (nameN.startsWith(qN)) score += 0.15;
+  return score;
+}
+// Treat spacing variants as same
+function equalLoose(a, b){
+  var an = normalize(a), bn = normalize(b);
+  if (an && bn && an === bn) return true;
+  return nospace(a) === nospace(b);
+}
+function scoreNameLoose(name, query){
+  var s1 = scoreName(name, query);
+  var s2 = scoreName(nospace(name), nospace(query));
+  return Math.max(s1, s2);
+}
+
+// Auto-build space-variant aliases from item names in pluMap (after normalize exists)
+(function buildSpaceAliasesFromNames(){
+  Object.keys(pluMap).forEach(function(code){
+    var base = normalize(pluMap[code]);
+    if (!base) return;
+    var noSpace = base.replace(/\s+/g,"");
+    var withSingleSpace = base.replace(/\s*/g," ").trim().replace(/\s+/g," ");
+    if (noSpace && noSpace !== base) aliases[noSpace] = base;
+    if (withSingleSpace && withSingleSpace !== base) aliases[withSingleSpace] = base;
+  });
+})();
+
+// =================== SPEED INDEX + FAST SCORING ===================
+// Build an index once for speed
+var entries = Object.keys(pluMap).map(function(code){
+  var name = pluMap[code];
+  var nameN = normalize(name);
+  var nameNS = nameN.replace(/\s+/g,'');
+  var tokens = toTokens(nameN);
+  var tokSet = tokens.reduce(function(o,t){ o[t]=1; return o; }, {});
+  var sndx = tokens.map(soundex);
+  return { code: code, name: name, nameN: nameN, nameNS: nameNS, tokens: tokens, tokSet: tokSet, sndx: sndx };
+});
+
+// simple cache
+var _CACHE = Object.create(null);
+
+function overlapCount(aSet, bSet){
+  var c = 0; for (var k in aSet) if (bSet[k]) c++; return c;
+}
+
+// Cheap score: substring + token overlap + phonetic overlap
+function fastScore(entry, qStr, qTokens, qTokSet, qSndx){
+  var sub = (entry.nameN.indexOf(qStr) !== -1) ? 1 : 0;
+  var inter = overlapCount(entry.tokSet, qTokSet);
+  var uni = Object.keys(entry.tokSet).length + qTokens.length - inter;
+  var jac = uni ? (inter/uni) : 0;
+  var phMatches = 0;
+  for (var i=0;i<entry.sndx.length;i++){
+    var s = entry.sndx[i];
+    for (var j=0;j<qSndx.length;j++){
+      if (s && s === qSndx[j]) { phMatches++; break; }
+    }
+  }
+  var ph = qSndx.length ? (phMatches / Math.max(entry.sndx.length, qSndx.length)) : 0;
+  var starts = entry.nameN.startsWith(qStr) ? 0.15 : 0;
+  return (jac*0.55) + (sub*0.30) + (ph*0.15) + starts;
+}
+
+// Heavier refinement for top-N only
+function refineScore(entry, input){
+  return scoreNameLoose(entry.name, input);
+}
+
+// ============================ UI LOGIC =============================
+function lookupPLU(){
+  var input = document.getElementById('query').value || '';
+  var out = document.getElementById('results');
+  out.innerHTML = '';
+
+  var q = normalize(input);
+  if (!q){
+    out.innerHTML = '<span class="muted">Type something to search…</span>';
+    return;
+  }
+
+  // cache hit
+  if (_CACHE[q]){
+    out.innerHTML = _CACHE[q];
+    return;
+  }
+
+  // quick exact match (code or name), spacing-insensitive
+  var exact = null;
+  for (var i=0;i<entries.length;i++){
+    var e = entries[i];
+    if (equalLoose(e.code, input) || equalLoose(e.name, input)) { exact = e; break; }
+  }
+
+  var resultsHTML = '';
+  // If query is all digits -> fast PLU path
+  if (/^[0-9]+$/.test(q)){
+    if (exact){
+      resultsHTML += '<div><strong>✅ Exact Match: '+ exact.code +' – '+ exact.name +'</strong></div>';
+    } else {
+      resultsHTML += '<div><strong>No match found</strong></div>';
+    }
+    var partial = [];
+    for (var k=0;k<entries.length;k++){
+      var e2 = entries[k];
+      if (exact && e2.code === exact.code) continue;
+      if (e2.code.indexOf(q) !== -1) partial.push(e2);
+    }
+    if (partial.length){
+      partial.sort(function(a,b){
+        var as = a.code.indexOf(q), bs = b.code.indexOf(q);
+        if (as !== bs) return as - bs;
+        return a.code.localeCompare(b.code);
+      });
+      var topL = partial.slice(0, 20).map(function(m){ return '<li>'+m.code+' – '+m.name+'</li>'; }).join('');
+      resultsHTML += '<div class="muted"><strong>Other Related Matches:</strong><ul>'+topL+'</ul></div>';
+    }
+    out.innerHTML = resultsHTML;
+    _CACHE[q] = resultsHTML;
+    return;
+  }
+
+  // Text path: precompute tokens once
+  var qTokens = toTokens(q);
+  var qTokSet = qTokens.reduce(function(o,t){ o[t]=1; return o; }, {});
+  var qSndx = qTokens.map(soundex);
+
+  // 1) FAST PASS (cheap features)
+  var scored = [];
+  for (var m=0;m<entries.length;m++){
+    var en = entries[m];
+    if (exact && en.code === exact.code) continue;
+    var s = fastScore(en, q, qTokens, qTokSet, qSndx);
+    if (/[0-9]/.test(q) && en.code.indexOf(q.replace(/\D/g,'')) !== -1) s = Math.max(s, 0.4);
+    if (s >= 0.25) scored.push({ ref: en, s: s });
+  }
+  scored.sort(function(a,b){ return b.s - a.s; });
+  var top = scored.slice(0, 60);
+
+  // 2) REFINE top-N
+  for (var r=0;r<top.length;r++){
+    top[r].s = 0.5*top[r].s + 0.5*refineScore(top[r].ref, input);
+  }
+  top.sort(function(a,b){ return b.s - a.s; });
+
+  // Render
+  if (exact){
+    resultsHTML += '<div><strong>✅ Exact Match: '+ exact.code +' – '+ exact.name +'</strong></div>';
+  } else {
+    resultsHTML += '<div><strong>No match found</strong></div>';
+  }
+  if (top.length){
+    var list = top.slice(0, 15).map(function(m){ return '<li>'+m.ref.code+' – '+m.ref.name+'</li>'; }).join('');
+    resultsHTML += '<div class="muted"><strong>Other Related Matches:</strong><ul>'+list+'</ul></div>';
+  }
+
+  out.innerHTML = resultsHTML;
+  _CACHE[q] = resultsHTML;
+}
+
+document.getElementById('btn').addEventListener('click', lookupPLU);
+document.getElementById('query').addEventListener('keydown', function(e){ if (e.key === 'Enter') lookupPLU(); });
+</script>
+</body>
+</html>
